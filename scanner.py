@@ -1,46 +1,142 @@
 import cv2
 import numpy as np
+import utils
 import argparse
 
-ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--image", required=True)
-ap.add_argument("-s", "--save", required=False, default=False, type=bool)
-args = vars(ap.parse_args())
+class Scanner:
+    def __init__(self):
+        pass
 
-image = cv2.imread(args["image"])
+    def preprocessImage(self, input_image):
+        """
+        Preparing the input image by applying a gray filter and blurring the image.
+            :param input_image: input image source
+            :return: image with all the filters applied
+        """
+        grayscale = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(grayscale, (5, 5), 1)
+
+        return image
+
+    def applyMask(self, input_image):
+        """
+        Applying the mask filter on the image.
+            :param input_image:
+            :return: masked filter
+        """
+
+        thresh = (255, 255)
+        image_threshold = cv2.Canny(input_image, thresh[0], thresh[1])
+        kernel = np.ones((5, 5))
+        dilated = cv2.dilate(image_threshold, kernel, iterations=2)
+        threshold_mask = cv2.erode(dilated, kernel, iterations=1)
+
+        return threshold_mask
+
+    def getEdges(self, input_mask):
+        """
+        Getting the edges of the mask.
+            :param image:
+            :param img:
+        :return:
+        """
+        contours, hierarchy = cv2.findContours(input_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contours = sorted(contours, key=cv2.contourArea, reverse=True)[:0]
+
+        return contours
+
+    def drawEdges(self, edges, input_image, color=(0, 255, 0)):
+        """
+        Drawing the contours on image
+            :param edges: the contours
+            :param input_image: the image that we will draw on
+            :param color: color for the contours drawing
+        :return: the input image with all the contours drawn on it
+        """
+        cv2.drawContours(input_image, contours, 2, color, 10)
+
+        return input_image
+
+    def drawContours(self, input_image, contours):
+        cv2.drawContours(input_image, contours, -1, (0, 255, 0), 20)
+        image_big_contour = utils.drawRectangle(input_image, contours, 2)
+
+        return image_big_contour
+
+    def changePerspectiveToScan(self, biggest_contour, input_image):
+        """
+        Morphing from image to scan.
+            :param biggest_contour: detecting the biggest contour
+            :param input_image:
+        :return:
+        """
+        pts1 = np.float32(biggest_contour)
+        pts2 = np.float32([[0, 0], [width, 0], [0, height], [width, height]])
+
+        matrix = cv2.getPerspectiveTransform(pts1, pts2)
+        image_warp_colored = cv2.warpPerspective(input_image, matrix, (width, height))
+
+        return image_warp_colored
+
+    def removeBorders(self, scan):
+        # --------- fine-tuning the resulted scan ---------
+        image_warp_colored = scan[20:scan.shape[0] - 20, 20:scan.shape[1] - 20]
+        image_warp_colored = cv2.resize(image_warp_colored, (width, height))
+
+        return image_warp_colored
+
+    def processOutputScan(self, scan):
+        # --------- applying last filters for the output ---------
+        image_warp_gray = cv2.cvtColor(scan, cv2.COLOR_BGR2GRAY)
+        image_adaptive_threshold = cv2.adaptiveThreshold(image_warp_gray, 255, 1, 1, 7, 2)
+        image_adaptive_threshold = cv2.bitwise_not(image_adaptive_threshold)
+        output_scan = cv2.medianBlur(image_adaptive_threshold, 3)
+
+        return output_scan
 
 
-def showImage(image, title, save_image=False):
-    if save_image:
-        cv2.imwrite(f"test/outputs/{title}.png", image)
+if __name__ == "__main__":
+    # -------- argparsing the input image --------
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-i", "--image", required=True, help="input image")
+    args = vars(ap.parse_args())
 
-    while True:
-        cv2.imshow(title, image)
+    scanner = Scanner()
 
-        if cv2.waitKey(1) == ord("q"):
-            break
+    # -------- loading the image --------
+    image_path = args["image"]
+    input_path = f"test/{image_path}"
+    image = cv2.imread(input_path)
+    detected_scan = image.copy()
+    original_image = image.copy()
+    (height, width) = image.shape[:2]
+    processed_image = scanner.preprocessImage(image)
+
+    # -------- applying the mask --------
+    mask = scanner.applyMask(processed_image)
+
+    # -------- finding the contours --------
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # -------- making the scan --------
+    biggest, maxArea = utils.biggestContour(contours)
+    if biggest.size != 0:
+        biggest = utils.reorder(biggest)
+
+        scanner.drawContours(detected_scan, biggest)
+        scan = scanner.changePerspectiveToScan(biggest, image)
+        scan = scanner.removeBorders(scan)
+        processed_output = scanner.processOutputScan(scan)
+
+        titles = [image_path, "processed_output.png", "output.png", "detected_scan.png"]
+        results = [original_image, processed_output, scan, detected_scan]
+
+        utils.plottingResults(results, titles)
 
 
-def preprocessImage(image):
-    kernel = np.ones((5, 5), np.uint8)
-    image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel, iterations=3)
-
-    return image
+    else:
+        # --------- setting the dots on the image ---------
+        print("oopsie")
 
 
-def applyMask(image):
-    mask = np.zeros(image.shape[:2], np.uint8)
-    bgdModel = np.zeros((1, 65), np.float64)
-    fgdModel = np.zeros((1, 65), np.float64)
-    rectangle = (20, 20, image.shape[1]-20, image.shape[0]-20)
 
-    cv2.grabCut(image, mask, rectangle, bgdModel, fgdModel, 5, cv2.GC_INIT_WITH_RECT)
-    mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype("uint8")
-    image = image * mask2[:, :, np.newaxis]
-
-    return image
-
-
-image = preprocessImage(image)
-image = applyMask(image)
-cv2.imwrite("test/outputs/test.png", image)
