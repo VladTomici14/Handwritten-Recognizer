@@ -94,6 +94,35 @@ class Scanner:
 
         return output_scan
 
+    def returnScan(self, image):
+        processed_image = self.preprocessImage(image)
+
+        # -------- applying the mask --------
+        mask = self.applyMask(processed_image)
+
+        # -------- finding the contours --------
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # -------- making the scan --------
+        biggest, maxArea = utils.biggestContour(contours)
+        if biggest.size != 0:
+            biggest = utils.reorder(biggest)
+
+            self.drawContours(detected_scan, biggest)
+            scan = self.changePerspectiveToScan(biggest, image)
+            scan = self.removeBorders(scan)
+            processed_output = self.processOutputScan(scan)
+
+            return processed_output
+    
+        else:
+            error_image = np.zeros_like(image)
+            cv2.putText(error_image, str("lol nu merge"), (image.shape[1] // 2, image.shape[0] // 2 - 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3, cv2.LINE_AA)
+
+            print("vai mama")
+
+            return error_image
+
 
 if __name__ == "__main__":
     # -------- argparsing the input image --------
@@ -110,33 +139,9 @@ if __name__ == "__main__":
     detected_scan = image.copy()
     original_image = image.copy()
     (height, width) = image.shape[:2]
-    processed_image = scanner.preprocessImage(image)
 
-    # -------- applying the mask --------
-    mask = scanner.applyMask(processed_image)
-
-    # -------- finding the contours --------
-    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # -------- making the scan --------
-    biggest, maxArea = utils.biggestContour(contours)
-    if biggest.size != 0:
-        biggest = utils.reorder(biggest)
-
-        scanner.drawContours(detected_scan, biggest)
-        scan = scanner.changePerspectiveToScan(biggest, image)
-        scan = scanner.removeBorders(scan)
-        processed_output = scanner.processOutputScan(scan)
-
-        titles = [image_path, "processed_output.png", "output.png", "detected_scan.png"]
-        results = [original_image, processed_output, scan, detected_scan]
-
-        utils.plottingResults(results, titles)
-
-
-    else:
-        # --------- setting the dots on the image ---------
-        print("oopsie")
+    final_output = scanner.returnScan(image)
+    cv2.imwrite("final.png", final_output)
 
 
 
