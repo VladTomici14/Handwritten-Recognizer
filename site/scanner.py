@@ -3,6 +3,7 @@ import numpy as np
 import utils
 import argparse
 
+
 class Scanner:
     def __init__(self):
         pass
@@ -16,7 +17,7 @@ class Scanner:
         grayscale = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(grayscale, (5, 5), 1)
 
-        return image
+        return input_image
 
     def applyMask(self, input_image):
         """
@@ -53,7 +54,7 @@ class Scanner:
             :param color: color for the contours drawing
         :return: the input image with all the contours drawn on it
         """
-        cv2.drawContours(input_image, contours, 2, color, 10)
+        cv2.drawContours(input_image, edges, 2, color, 10)
 
         return input_image
 
@@ -70,6 +71,8 @@ class Scanner:
             :param input_image:
         :return:
         """
+        height, width = input_image.shape[:2]
+
         pts1 = np.float32(biggest_contour)
         pts2 = np.float32([[0, 0], [width, 0], [0, height], [width, height]])
 
@@ -81,7 +84,7 @@ class Scanner:
     def removeBorders(self, scan):
         # --------- fine-tuning the resulted scan ---------
         image_warp_colored = scan[20:scan.shape[0] - 20, 20:scan.shape[1] - 20]
-        image_warp_colored = cv2.resize(image_warp_colored, (width, height))
+        image_warp_colored = cv2.resize(image_warp_colored, (scan.shape[1], scan.shape[0]))
 
         return image_warp_colored
 
@@ -94,8 +97,10 @@ class Scanner:
 
         return output_scan
 
-    def returnScan(self, image):
-        processed_image = self.preprocessImage(image)
+    def returnScan(self, image_path):
+        input_image = cv2.imread(image_path)
+        original_image = input_image.copy()
+        processed_image = self.preprocessImage(input_image)
 
         # -------- applying the mask --------
         mask = self.applyMask(processed_image)
@@ -107,21 +112,30 @@ class Scanner:
         biggest, maxArea = utils.biggestContour(contours)
         if biggest.size != 0:
             biggest = utils.reorder(biggest)
-
-            self.drawContours(detected_scan, biggest)
-            scan = self.changePerspectiveToScan(biggest, image)
+            self.drawContours(input_image, biggest)
+            scan = self.changePerspectiveToScan(biggest, input_image)
             scan = self.removeBorders(scan)
             processed_output = self.processOutputScan(scan)
 
-            return processed_output
-    
         else:
-            error_image = np.zeros_like(image)
-            cv2.putText(error_image, str("lol nu merge"), (image.shape[1] // 2, image.shape[0] // 2 - 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3, cv2.LINE_AA)
+            processed_output = np.zeros_like(input_image)
+            cv2.putText(
+                processed_output,
+                str("lol nu merge"),
+                (input_image.shape[1] // 2, input_image.shape[0] // 2 - 100),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (0, 0, 255),
+                3,
+                cv2.LINE_AA
+            )
 
             print("vai mama")
 
-            return error_image
+        output_path = "static/outputs/output.png"
+        cv2.imwrite("static/outputs/output.png", processed_output)
+
+        return output_path
 
 
 if __name__ == "__main__":
@@ -134,14 +148,27 @@ if __name__ == "__main__":
 
     # -------- loading the image --------
     image_path = args["image"]
-    input_path = f"test/{image_path}"
-    image = cv2.imread(input_path)
+    image = cv2.imread(image_path)
     detected_scan = image.copy()
     original_image = image.copy()
     (height, width) = image.shape[:2]
 
-    final_output = scanner.returnScan(image)
-    cv2.imwrite("final.png", final_output)
+    final_output = cv2.imread(scanner.returnScan(image_path))
+    # -------- plotting the results --------
+    # titles = [
+    #     "scan-test5.png",
+    #     "processed_output.png",
+    #     "output.png",
+    #     "detected_scan.png"
+    # ]
+    #
+    # results_path = [
+    #     "../test/scan-test5.jpg",
+    #     "static/outputs/scan.png",
+    #     "static/outputs/output.png",
+    #     "static/outputs/input_image.png"
+    # ]
+    #
+    # utils.plottingResults(results_path, titles)
 
-
-
+    cv2.imwrite("static/outputs/final.png", final_output)
