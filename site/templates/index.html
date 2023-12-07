@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
 
+    <title>Handwritten recognizer</title>
 </head>
 
 <body>
@@ -52,9 +53,18 @@
                                <p style="color:green;">File uploaded successfully!</p>
                           <form action="/show_file" target="_blank" >
                             <input type="submit" value="Show File" />
+
+
+<!--                                <button type="submit" class="btn btn-primary btn-block rounded-pill shadow red"-->
+<!--                                    id="myFile">Show image</button>-->
                               {% else %}
                               <form action="/show_file" target="_blank" >
-                            <input type="submit" value="Show File" />
+                                <input type="submit" value="Show File" />
+
+
+<!--                                <button type="submit" class="btn btn-primary btn-block rounded-pill shadow red"-->
+<!--                                    id="myFile">Show image</button>-->
+
                                   {% endif %}
 
 
