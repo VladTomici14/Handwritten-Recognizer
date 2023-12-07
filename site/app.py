@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session
 import os
 import warnings
+import utils
 from scanner import Scanner
 from werkzeug.exceptions import HTTPException
 
@@ -13,17 +14,17 @@ def allowed_file(filename):
 
 warnings.filterwarnings("ignore")
 
-app = Flask(__name__, template_folder="site/templates", static_folder='/site/static')
+app = Flask(__name__, template_folder="templates", static_folder="static")
 
 # Set Environment Variables
-UPLOAD_FOLDER = os.path.join("site/static/uploads")
-OUTPUT_FOLDER = os.path.join("site/static/outputs")
+UPLOAD_FOLDER = os.path.join("static/uploads")
+OUTPUT_FOLDER = os.path.join("static/outputs")
 # The config is actually a subclass of a dictionary and can be modified just like any dictionary
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.secret_key = "xyz"
 # app.config["MONGO_URI"] = "mongodb://localhost:27017/"
-os.path.dirname("site/templates")
+os.path.dirname("templates")
 
 @app.route('/')
 def main():
@@ -32,7 +33,6 @@ def main():
 
 @app.route('/', methods=["POST"])
 def uploadFile():
-    print(app.config["UPLOAD_FOLDER"])
     if not os.path.exists(app.config["UPLOAD_FOLDER"]):  # Create Directory for the uploaded static
         os.mkdir(app.config["UPLOAD_FOLDER"])
 
@@ -49,9 +49,7 @@ def uploadFile():
 def displayImage():
     img_file_path = session.get("uploaded_img_file_path", None)
 
-    print(os.getcwd())
-    img_file_path = "Handwritten-Recognizer/site/static/uploads/scan-test1.png"
-    return render_template("show_file.html", user_image="../uploads/scan-test1.png", is_image=True, is_show_button=True)
+    return render_template("show_file.html", user_image=img_file_path, is_image=True, is_show_button=True)
 
     # if img_file_path.split(".")[-1] in ("mp4", "mov"):
     #     return render_template("show_file.html", user_image=img_file_path, is_image=False, is_show_button=True)
@@ -64,9 +62,9 @@ def detectObject():
     uploaded_image_path = session.get("uploaded_img_file_path", None)
     # output_image_path, response, file_type = detect_and_draw_box(uploaded_image_path)
 
-    input_image_path = "../static/outputs/input.png"
     scanner = Scanner()
-    output_image_path = scanner.returnScan(input_image_path)
+    output_image_path = scanner.returnScan(uploaded_image_path)
+    
     return render_template("show_file.html", user_image=output_image_path, is_image=True, is_show_button=False)
 
     # if file_type == "image":
