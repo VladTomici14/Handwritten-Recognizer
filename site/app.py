@@ -63,14 +63,13 @@ def detectObject():
     # output_image_path, response, file_type = detect_and_draw_box(uploaded_image_path)
 
     scanner = Scanner()
-    output_image_path = scanner.returnScan(uploaded_image_path)
-    
-    return render_template("show_file.html", user_image=output_image_path, is_image=True, is_show_button=False)
+    output_image_path, success = scanner.returnScan(uploaded_image_path)
+    print(success)
 
-    # if file_type == "image":
-    #     return render_template("show_file.html", user_image=output_image_path, is_image=True, is_show_button=False)
-    # else:
-    #     return render_template("show_file.html", user_image=output_image_path, is_image=False, is_show_button=False)
+    if success == True:
+        return render_template("show_file.html", user_image=output_image_path, is_image=True, is_show_button=False)
+    else:
+        return render_template("show_file.html", user_image=output_image_path, is_image=True, is_show_button=False)
 
 
 # @app.route('/get-items')

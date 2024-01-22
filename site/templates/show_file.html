@@ -9,10 +9,34 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
 
+     <script type="text/javascript">
+        function getMouseCoordinatesDiv(e) {
+            var div = document.getElementById('myDiv');
+
+            div.addEventListener(
+                'mousemove',
+                function (event) {
+                    var rect = div.getBoundingClientRect();
+                    var posx = event.clientX - rect.left;
+                    var posy = event.clientY - rect.top;
+
+                    document.Form1.posx.value = posx;
+                    document.Form1.posy.value = posy;
+
+                    console.log("posx:", posx);
+                    console.log("posy:", posy);
+                }
+            )
+        }
+
+        // console.log('Cursor position: ' + x + ',' + y);
+     </script>
+
+
   </head>
-    <script>
-      var jsonfile ={{jsonfile}};
-    </script>
+<!--    <script>-->
+<!--      var jsonfile ={{jsonfile}};-->
+<!--    </script>-->
     <style>
       .img-container {
         text-align: center;
@@ -39,15 +63,52 @@
     </div> -->
 
 
-
+<div onclick="getMouseCoordinatesDiv(event)"></div>
+    <div id="myDiv">
+        <img src="{{ user_image }}" alt="User Image"   width="300" ><br>
+    </div>
+    <div id="example">
+        <button type="submit" style="width:200px" class="btn btn-primary btn-block rounded-pill shadow"> Scan image</button>
+        <p id="test">x: , y:</p>
+        <form name="Form1">
+        POSX: <input type="text" name="posx"><br>
+        POSY: <input type="text" name="posy"><br>
+        </form>
+    </div>
+</div>
 
  {% if is_image %}
         {% if is_show_button %}
            <form action="/detect_object" target="_blank">
-          <img src="{{ user_image }}" alt="User Image"   width="300" ><br>
-            <div>
-                <button type="submit" style="width:200px" class="btn btn-primary btn-block rounded-pill shadow"> Scan image</button>
-            </div>
+
+               <!-- pixel choicer -->
+               <div>
+<!--                <script>-->
+<!--                    function printMousePos(event) {-->
+<!--                      document.body.textContent =-->
+<!--                        "clientX: " + event.clientX +-->
+<!--                        " - clientY: " + event.clientY;-->
+<!--                    }-->
+
+<!--                    document.addEventListener("click", printMousePos);-->
+<!--                </script>-->
+               </div>
+
+              <div onclick="getMouseCoordinatesDiv(event)"></div>
+                    <div id="myDiv">
+                        <img src="{{ user_image }}" alt="User Image"   width="300" ><br>
+                    </div>
+                    <div id="example">
+                        <button type="submit" style="width:200px" class="btn btn-primary btn-block rounded-pill shadow"> Scan image</button>
+                        <p id="test">x: , y:</p>
+                        <form name="Form1">
+                        POSX: <input type="text" name="posx"><br>
+                        POSY: <input type="text" name="posy"><br>
+                        </form>
+                    </div>
+                </div>
+
+
            </form>
         {% else %}
 

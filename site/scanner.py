@@ -117,6 +117,8 @@ class Scanner:
             scan = self.removeBorders(scan)
             processed_output = self.processOutputScan(scan)
 
+            success = True
+
         else:
             processed_output = np.zeros_like(input_image)
             cv2.putText(
@@ -130,12 +132,14 @@ class Scanner:
                 cv2.LINE_AA
             )
 
+            success = False
+
             print("vai mama")
 
         output_path = "static/outputs/output.png"
         cv2.imwrite("static/outputs/output.png", processed_output)
 
-        return output_path
+        return output_path, success
 
 
 if __name__ == "__main__":
@@ -153,7 +157,7 @@ if __name__ == "__main__":
     original_image = image.copy()
     (height, width) = image.shape[:2]
 
-    final_output = cv2.imread(scanner.returnScan(image_path))
+    final_output = cv2.imread(scanner.returnScan(image_path)[0])
     # -------- plotting the results --------
     # titles = [
     #     "scan-test5.png",
